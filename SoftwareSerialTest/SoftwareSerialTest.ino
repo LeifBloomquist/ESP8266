@@ -24,29 +24,29 @@ void setup()
   digitalWrite(BLUE_LED, HIGH);  // HIGH=Off
   digitalWrite(RED_LED, HIGH);
 
-  Serial.println();
-  Serial.println();
-  Serial.print("Connecting to ");
-  Serial.println(ssid);
+  softSerial.println();
+  softSerial.println();
+  softSerial.print("Connecting to ");
+  softSerial.print(ssid);
 
   WiFi.begin(ssid, password);
 
   while (WiFi.status() != WL_CONNECTED) 
   {
     delay(500);
-    Serial.print(".");
+    softSerial.print(".");
   }
 
-  Serial.println("");
-  Serial.println("WiFi connected");
-  Serial.println("IP address: ");
-  Serial.println(WiFi.localIP());
+  softSerial.println("WiFi connected!");
+  softSerial.print("IP address: ");
+  softSerial.println(WiFi.localIP());
  
   // Start the server 
   //server.begin();
   //server.setNoDelay(true);   
 
   // Init message
+  softSerial.println();
   softSerial.println("READY.");
   //softSerial.print("Ready! Use 'telnet ");
   //softSerial.print(WiFi.localIP());
@@ -170,7 +170,7 @@ void DoTelnet()
   int port = 23;
 
   softSerial.println();
-  softSerial.print(F("\r\nTelnet host ("));
+  softSerial.print(F("Telnet host ("));
   softSerial.print(lastHost);
   softSerial.print(F("): "));
 
@@ -254,9 +254,8 @@ void TerminalMode(WiFiClient client)
     digitalWrite(BLUE_LED, HIGH);  // HIGH=Off
     digitalWrite(RED_LED, HIGH);
 
-
     // Get data from the telnet client and push it to the UART client
-    while (client.available() > 0)
+    if (client.available() > 0)
     {
       digitalWrite(BLUE_LED, LOW);  // Low=On
 
@@ -373,7 +372,10 @@ String GetInput_Raw()
 
 int ReadByte(Stream& in)
 {
-  while (in.available() == 0) {}
+  while (in.available() == 0) 
+  {
+    yield();
+  }
   return in.read();
 }
 
