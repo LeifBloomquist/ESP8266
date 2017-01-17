@@ -105,4 +105,6 @@ typedef long __PTRDIFF_TYPE__;
 #define noInterrupts() cli()
 
 #include "SoftwareSerialTest.ino"
+#include "Ansi.ino"
+#include "Telnet.ino"
 #endif

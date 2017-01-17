@@ -7,6 +7,14 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SoftwareSerialTest", "Softw
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TelnetPixels", "TelnetPixels\TelnetPixels.vcxproj", "{69C57351-23EB-40BF-B4CC-D32130387C46}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CheerPixels", "CheerPixels\CheerPixels.vcxproj", "{D19E314D-DCE0-40E5-8A5A-217134C16F95}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{719288AE-510B-4116-A79A-B68EE7FF555A}"
+	ProjectSection(SolutionItems) = preProject
+		.gitignore = .gitignore
+		Common\ssids.h = Common\ssids.h
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -21,6 +29,10 @@ Global
 		{69C57351-23EB-40BF-B4CC-D32130387C46}.Debug|Win32.Build.0 = Debug|Win32
 		{69C57351-23EB-40BF-B4CC-D32130387C46}.Release|Win32.ActiveCfg = Release|Win32
 		{69C57351-23EB-40BF-B4CC-D32130387C46}.Release|Win32.Build.0 = Release|Win32
+		{D19E314D-DCE0-40E5-8A5A-217134C16F95}.Debug|Win32.ActiveCfg = Debug|Win32
+		{D19E314D-DCE0-40E5-8A5A-217134C16F95}.Debug|Win32.Build.0 = Debug|Win32
+		{D19E314D-DCE0-40E5-8A5A-217134C16F95}.Release|Win32.ActiveCfg = Release|Win32
+		{D19E314D-DCE0-40E5-8A5A-217134C16F95}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
