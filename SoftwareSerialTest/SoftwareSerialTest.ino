@@ -1,7 +1,6 @@
-#include "Telnet.h"
 #include <ESP8266WiFi.h>
 #include <SoftwareSerial.h>   // Special version for ESP8266, apparently
-#include "telnet.h"
+#include "Telnet.h"
 #include "C:\Leif\GitHub\ESP8266\Common\ssids.h"
 
 //how many clients should be able to telnet to this ESP8266
