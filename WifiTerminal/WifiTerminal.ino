@@ -12,15 +12,21 @@ as published by the Free Software Foundation.
 
 /* ChangeLog
 January 24, 2017: Leif Bloomquist
+- Major refactoring plus support for ANSI WYSE Terminal instead of C64
 
 Sept 18th, 2016: Alex Burger
 - Change Hayes/Menu selection to variable
+...
 */
 
 #include <ESP8266WiFi.h>
 #include <SoftwareSerial.h>   // Special version for ESP8266, apparently
+#include <EEPROM.h>
 #include "Telnet.h"
+#include "ADDR_EEPROM.h"
 #include "C:\Leif\GitHub\ESP8266\Common\ssids.h"
+
+#define VERSION "ESP 0.13"
 
 //how many clients should be able to telnet to this ESP8266
 #define MAX_SRV_CLIENTS 1
@@ -34,10 +40,16 @@ Sept 18th, 2016: Alex Burger
 
 SoftwareSerial softSerial(4, 5); // RX, TX
 
+unsigned int BAUD_RATE = 9600;
+
+String lastHost = "";
+int lastPort = 23;
+
 void setup() 
 {  
+  // Serial connections
   Serial.begin(115200);
-  softSerial.begin(9600);
+  softSerial.begin(BAUD_RATE);
 
   // LEDs
   pinMode(BLUE_LED, OUTPUT);
@@ -45,6 +57,10 @@ void setup()
   digitalWrite(BLUE_LED, HIGH);  // HIGH=Off
   digitalWrite(RED_LED, HIGH);
 
+  // EEPROM
+  EEPROM.begin(1024);
+
+  // Opening Message and connect to Wifi
   softSerial.println();
   softSerial.println();
   AnsiClearScreen(softSerial);
@@ -60,19 +76,12 @@ void setup()
   }
 
   softSerial.println("WiFi connected!");
-  softSerial.print("IP address: ");
-  softSerial.println(WiFi.localIP());
+
+  ShowInfo(true);
  
   // Start the server 
   //server.begin();
   //server.setNoDelay(true);   
-
-  // Init message
-  softSerial.println();
-  softSerial.println("READY.");
-  //softSerial.print("Ready! Use 'telnet ");
-  //softSerial.print(WiFi.localIP());
-  //softSerial.println(" 23' to connect");
 }
 
 
@@ -81,8 +90,154 @@ void loop()
   digitalWrite(BLUE_LED, HIGH);  // HIGH=Off
   digitalWrite(RED_LED, HIGH);
 
-  DoTelnet();
+  ShowMenu();
 }
+
+void ShowMenu()
+{
+  softSerial.print
+  (F("1. Telnet to Host\r\n"
+     "2. Phone Book\r\n"
+     "3. Wait for Incoming Connection\r\n"
+     "4. Configuration\r\n"
+     "5. Hayes Emulation Mode \r\n"
+     "\r\n"
+     "Select: "));
+
+  int option = ReadByte(softSerial);
+  softSerial.println((char)option);   // Echo back
+
+  switch (option)
+  {
+    case '1':
+      DoTelnet();
+      break;
+
+    case '2':
+      PhoneBook();
+      break;
+
+    case '3':
+      Incoming();
+      break;
+
+    case '4':
+      Configuration();
+      break;
+
+    case '5':
+   //   mode_Hayes = true;
+    //  updateEEPROMByte(ADDR_HAYES_MENU, mode_Hayes);
+      softSerial.println(F("Restarting in Hayes Emulation mode."));
+      softSerial.println(F("Use AT&M to return to menu mode."));
+      softSerial.println("NOT IMPLEMENTED - rebooting!");  // !!!!
+      ESP.restart();
+      while (1);
+      break;
+
+    case '\n':
+    case '\r':
+    case ' ':
+      break;
+
+    default:
+      softSerial.println(F("Unknown option, try again"));
+      break;
+    }
+}
+
+void Configuration()
+{
+  while (true)
+  {
+    char temp[30];
+    softSerial.print
+      (F("\r\n" 
+      "Configuration Menu\r\n" 
+      "\r\n"
+      "1. Display Current Configuration\r\n"
+      "2. Change SSID\r\n"
+      "3. Return to Main Menu\r\n"
+      "\r\nSelect: "));
+
+    int option = ReadByte(softSerial);
+    softSerial.println((char)option);  // Echo back
+
+    switch (option)
+    {
+      case '1':
+        ShowInfo(false);
+        delay(100);        // Sometimes menu doesn't appear properly after
+        break;
+
+      case '2':
+        //ChangeSSID();
+        break;
+
+      case '3': return;
+
+      case '\n':
+      case '\r':
+      case ' ':
+        continue;
+
+      default: softSerial.println(F("Unknown option, try again"));
+        continue;
+    }
+  }
+}
+
+// ----------------------------------------------------------
+// Show Configuration
+
+void ShowInfo(boolean powerup)
+{
+  softSerial.println();
+
+  softSerial.print(F("IP Address:  "));    
+  softSerial.println(WiFi.localIP());
+
+  yield();  // For 300 baud
+
+  softSerial.print(F("IP Subnet:   "));    
+  softSerial.println(WiFi.subnetMask());
+   
+  yield();  // For 300 baud
+
+  softSerial.print(F("IP Gateway:  "));   
+  softSerial.println(WiFi.gatewayIP());
+
+  yield();  // For 300 baud
+
+  softSerial.print(F("Wi-Fi SSID:  "));    
+  softSerial.println(WiFi.SSID());
+
+  yield();  // For 300 baud
+
+  softSerial.print(F("MAC Address: "));    
+  softSerial.println(WiFi.macAddress());
+
+  yield();  // For 300 baud
+
+  softSerial.print(F("DNS IP:      "));
+  softSerial.println(WiFi.dnsIP());
+
+  yield();  // For 300 baud
+
+  softSerial.print(F("Hostname:    "));   
+  softSerial.println(WiFi.hostname());
+
+  yield();  // For 300 baud
+
+  softSerial.print(F("Firmware:    "));
+  softSerial.println(VERSION);
+
+  yield();  // For 300 baud
+
+  //C64Print(F("Listen port: "));    C64Serial.print(WiFlyLocalPort); C64Serial.println();
+  yield();  // For 300 baud
+}
+
 
 void TerminalMode(WiFiClient client)
 {
@@ -148,6 +303,83 @@ void TerminalMode(WiFiClient client)
       delay(1);  // needed?
     }
   } // while (client.connected())
+}
+
+// ----------------------------------------------------------
+// Simple Incoming connection handling
+
+int WiFiLocalPort = 0;
+
+void Incoming()
+{
+  int localport = WiFiLocalPort;
+
+  softSerial.print(F("\r\nIncoming port ("));
+  softSerial.print(localport);
+  softSerial.print(F("): "));
+
+  String strport = GetInput();
+
+  if (strport.length() > 0)
+  {
+    localport = strport.toInt();
+    //setLocalPort(localport);  !!!! Write to EEPROM?
+  }
+
+  WiFiLocalPort = localport;
+
+  WiFiServer server(localport);
+  WiFiClient serverClients[MAX_SRV_CLIENTS];
+
+  while (1)
+  {
+    // Force close any connections that were made before we started listening, as
+    // the WiFly is always listening and accepting connections if a local port
+    // is defined.
+    server.close();
+
+    softSerial.print(F("\r\nWaiting for connection on port "));
+    softSerial.println(WiFiLocalPort);
+
+    uint8_t i;
+    //check if there are any new clients
+    if (server.hasClient())
+    {
+      for (i = 0; i < MAX_SRV_CLIENTS; i++)
+      {
+        //find free/disconnected spot
+        if (!serverClients[i] || !serverClients[i].connected())
+        {
+          if (serverClients[i]) serverClients[i].stop();
+          serverClients[i] = server.available();
+
+          softSerial.println(F("Incoming Connection"));  // From....?         
+
+
+          // Handle incoming connection
+          serverClients[i].println(F("CONNECTING..."));
+          //CheckTelnet();
+          TerminalMode(serverClients[i]);
+          continue;
+        }
+      }
+
+      //no free/disconnected spot so reject
+      WiFiClient serverClient = server.available();
+      serverClient.write("\n\rSorry, server is busy\n\r\n\r");
+      serverClient.stop();
+    }
+    else
+    {
+      if (softSerial.available() > 0)  // Key hit
+      {
+        softSerial.read();  // Eat Character
+        softSerial.println(F("Cancelled"));
+        server.close();
+        return;
+      }
+    }
+  }
 }
 
 // ----------------------------------------------------------

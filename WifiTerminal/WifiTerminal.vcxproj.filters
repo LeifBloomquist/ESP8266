@@ -15,7 +15,21 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <None Include="$safeprojectname$.ino" />
+    <None Include="WifiTerminal.ino" />
+    <None Include="Ansi.ino" />
+    <None Include="Telnet.ino" />
+    <None Include="PhoneBook.ino" />
+    <None Include="EEPROM.ino" />
   </ItemGroup>
- 
+  <ItemGroup>
+    <ClInclude Include="__vm\.WifiTerminal.vsarduino.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Telnet.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ADDR_EEPROM.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
 </Project>

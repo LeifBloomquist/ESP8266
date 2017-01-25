@@ -3,12 +3,9 @@
 
 #include "telnet.h"
 
-String lastHost = "";
-int lastPort = 23;
-
 void DoTelnet()
 {
-  int port = 23;
+  int port = lastPort;
 
   softSerial.println();
   softSerial.print(F("Telnet host ("));
@@ -24,7 +21,7 @@ void DoTelnet()
     lastHost = hostName;
     lastPort = port;
 
-    Connect(hostName, port, false);
+    Connect(hostName, port);
   }
   else
   {
@@ -33,7 +30,7 @@ void DoTelnet()
       port = getPort();
 
       lastPort = port;
-      Connect(lastHost, port, false);
+      Connect(lastHost, port);
     }
     else
     {
@@ -61,7 +58,7 @@ int getPort(void)
   }
 }
 
-void Connect(String host, int port, boolean raw)
+void Connect(String host, int port)
 {
   char temp[80];
   softSerial.println();
@@ -165,7 +162,5 @@ void SendTelnetParameters(Stream& client)
   client.write(NVT_DONT);                              // send character 253 (do)
   client.write(1);                                     // echo
 }
-
-
 
 // EOF
