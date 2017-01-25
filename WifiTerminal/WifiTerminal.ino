@@ -39,6 +39,8 @@ unsigned int BAUD_RATE = 9600;
 String lastHost = "";
 int lastPort = TELNET_DEFAULT_PORT;
 
+int mode_Hayes = 1;    // 0 = Menu, 1 = Hayes
+
 void setup() 
 {  
   // Serial connections
@@ -87,6 +89,9 @@ void loop()
     mode_Hayes = 0;
   }
 
+  // DEBUG !!!! Always start in Menu mode for testing.
+  mode_Hayes = 0;
+
   if (mode_Hayes)
   {
     HayesEmulationMode();
@@ -131,12 +136,7 @@ void ShowMenu()
       break;
 
     case '5':
-      mode_Hayes = true;
-      updateEEPROMByte(ADDR_HAYES_MENU, mode_Hayes);
-      softSerial.println(F("Hayes mode set.  Use AT&M to return to menu mode."));
-      softSerial.println(""); 
-      ESP.restart();
-      while (1);
+      EnterHayesMode();
       break;
 
     case '\n':

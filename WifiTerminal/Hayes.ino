@@ -2,9 +2,6 @@
 // Hayes Emulation
 // Portions of this code are adapted from Payton Byrd's Hayesduino - thanks!
 
-int mode_Hayes = 1;    // 0 = Menu, 1 = Hayes
-
-
 #define ESCAPE_GUARD_TIME 1000
 #define TIMEDOUT  -1
 #define COMMAND_BUFFER_SIZE  81
@@ -33,6 +30,17 @@ char    Modem_LastCommandBuffer[COMMAND_BUFFER_SIZE];
 char    Modem_CommandBuffer[COMMAND_BUFFER_SIZE];
 char    Modem_LastCommandChar;
 char    Modem_lastInputCharacter;
+
+
+void EnterHayesMode()
+{
+  mode_Hayes = true;
+  updateEEPROMByte(ADDR_HAYES_MENU, mode_Hayes);
+  softSerial.println();
+  softSerial.println(F("Hayes mode set.  Use AT&M to return to menu mode."));  
+  HayesEmulationMode();
+}
+
 
 void HayesEmulationMode()
 {
@@ -98,6 +106,11 @@ inline void Modem_PrintERROR()
 /* Modem response codes should be in ASCII.  */
 void Modem_PrintResponse(byte code, String msg)
 {
+  // DEBUG !!!!
+  softSerial.println();
+  softSerial.println(msg);
+  return;
+
   if (!Modem_QuietMode)
   {
     if (Modem_VerboseResponses)
@@ -198,7 +211,6 @@ void Modem_Disconnect(boolean printNoCarrier)
 // Validate and handle AT sequence  (A/ was handled already)
 void Modem_ProcessCommandBuffer()
 {
-  //boolean petscii_mode_guess = false;
   byte errors = 0;
   //boolean dialed_out = 0;
   // Phonebook dial
@@ -655,7 +667,7 @@ void Modem_ProcessCommandBuffer()
             WiFiConnectSuccess = false;
             while (WiFicounter < 40) {
               delay(500);
-              Serial.print(".");
+              softSerial.print(".");
               if (WiFi.status() == WL_CONNECTED) {
                 WiFiConnectSuccess = true;
                 break;
@@ -900,6 +912,8 @@ void Modem_Connected(boolean incoming)
 
 void Incoming_ProcessData()
 {
+  yield();
+
   /*
   // Modem to C64 flow
   boolean wiflyIsConnected = false; // wifly.connected();
@@ -986,25 +1000,26 @@ void Incoming_ProcessData()
       return;
     }
 
+    */
+
     // Check for a dropped remote connection while connected
     if (Modem_isConnected)
     {
       Modem_Disconnect(true);
       return;
     }
-  }
-
-  */
+  
 }
 
 void Modem_ProcessData()
 {
   while (softSerial.available() > 0)
   {
+    yield();
+
       // Command Mode -----------------------------------------------------------------------
       if (Modem_isCommandMode)
       {
-        unsigned char unsignedInbound;
         char inbound = softSerial.read();
 
         // Block non-ASCII/PETSCII characters
@@ -1040,12 +1055,14 @@ void Modem_ProcessData()
         //else if (inbound != '\r' && inbound != '\n' && inbound != Modem_S2_EscapeCharacter)
         else if (inbound != '\r' && inbound != '\n')
         {
-          if (strlen(Modem_CommandBuffer) >= COMMAND_BUFFER_SIZE) {
+          if (strlen(Modem_CommandBuffer) >= COMMAND_BUFFER_SIZE) 
+          {
             //Display (F("CMD Buf Overflow"));
             Modem_PrintERROR();
             Modem_ResetCommandBuffer();
           }
-          else {
+          else 
+          {
             // TODO:  Move to Modem_ProcessCommandBuffer?
             if (Modem_AT_Detected)
             {
@@ -1056,22 +1073,20 @@ void Modem_ProcessData()
               switch (strlen(Modem_CommandBuffer))
               {
               case 0:
-                switch (unsignedInbound)
+                switch (inbound)
                 {
                 case 'A':
                 case 'a':
-                case 0xC1:
                   Modem_CommandBuffer[strlen(Modem_CommandBuffer)] = inbound;
                   break;
                 }
                 break;
               case 1:
-                switch (unsignedInbound)
+                switch (inbound)
                 {
                 case 'T':
                 case 't':
                 case '/':
-                case 0xD4:
                   Modem_CommandBuffer[strlen(Modem_CommandBuffer)] = inbound;
                   Modem_AT_Detected = true;
                   break;
@@ -1080,6 +1095,7 @@ void Modem_ProcessData()
               }
             }
 
+            // Special case:  A/
             if ((toupper(Modem_CommandBuffer[0]) == 'A') && (Modem_CommandBuffer[1] == '/'))
             {
               strcpy(Modem_CommandBuffer, Modem_LastCommandBuffer);
@@ -1170,6 +1186,8 @@ void Modem_Answer()
 // Main processing loop for the virtual modem.
 void Modem_Loop()
 {
+  yield();
+
   // Incoming to Terminal Flow
   Incoming_ProcessData();
 
