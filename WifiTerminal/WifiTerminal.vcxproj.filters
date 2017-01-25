@@ -15,16 +15,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <None Include="SoftwareSerialTest.ino" />
-    <None Include="Telnet.ino" />
-    <None Include="Ansi.ino" />
+    <None Include="$safeprojectname$.ino" />
   </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="__vm\.SoftwareSerialTest.vsarduino.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Telnet.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-  </ItemGroup>
+ 
 </Project>
