@@ -1,39 +1,35 @@
 // ----------------------------------------------------------
 // Simple Incoming connection handling
 
+//how many clients should be able to telnet to this ESP8266
+#define MAX_SRV_CLIENTS 1
+
 int WiFiLocalPort = TELNET_DEFAULT_PORT;
 
 void Incoming()
 {
-  int localport = WiFiLocalPort;
-
   softSerial.print(F("\r\nIncoming port ("));
-  softSerial.print(localport);
+  softSerial.print(WiFiLocalPort);
   softSerial.print(F("): "));
 
   String strport = GetInput();
 
   if (strport.length() > 0)
   {
-    localport = strport.toInt();
+    WiFiLocalPort = strport.toInt();
     //setLocalPort(localport);  !!!! Write to EEPROM?
   }
 
-  WiFiLocalPort = localport;
-
-  WiFiServer server(localport);
+  WiFiServer server(WiFiLocalPort);
   WiFiClient serverClients[MAX_SRV_CLIENTS];
 
   // Start the server 
   server.begin();
   server.setNoDelay(true);
 
-  // Force close any connections that were made before we started listening, as
-  // the WiFly is always listening and accepting connections if a local port
-  // is defined.
-  //server.close();
-
-  softSerial.print(F("\r\nWaiting for connection on port "));
+  softSerial.print(F("\r\nWaiting for connection on "));
+  softSerial.print(WiFi.localIP());
+  softSerial.print(" port ");
   softSerial.println(WiFiLocalPort);
 
   while (1)
@@ -63,6 +59,8 @@ void Incoming()
           continue;
         }
       }
+
+      softSerial.println(F("DEBUG: Incoming connection but already connected ****"));
 
       //no free/disconnected spot so reject
       WiFiClient serverClient = server.available();

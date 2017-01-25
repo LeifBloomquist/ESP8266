@@ -78,6 +78,7 @@
       <FileType>CppCode</FileType>
     </None>
     <None Include="EEPROM.ino" />
+    <None Include="Hayes.ino" />
     <None Include="Incoming.ino" />
     <None Include="PhoneBook.ino" />
     <None Include="Telnet.ino">

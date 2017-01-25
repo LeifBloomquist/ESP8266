@@ -28,15 +28,9 @@ Sept 18th, 2016: Alex Burger
 
 #define VERSION "ESP 0.13"
 
-//how many clients should be able to telnet to this ESP8266
-#define MAX_SRV_CLIENTS 1
-
 // Defines for the Adafruit Feather HUZZAH ESP8266
 #define BLUE_LED 2
 #define RED_LED  0
-
-//WiFiServer server(23);
-//WiFiClient serverClients[MAX_SRV_CLIENTS];
 
 SoftwareSerial softSerial(4, 5); // RX, TX
 
@@ -85,7 +79,22 @@ void loop()
   digitalWrite(BLUE_LED, HIGH);  // HIGH=Off
   digitalWrite(RED_LED, HIGH);
 
-  ShowMenu();
+  // Menu or Hayes AT command mode?
+  mode_Hayes = EEPROM.read(ADDR_HAYES_MENU);
+
+  if (mode_Hayes < 0 || mode_Hayes > 1)
+  {
+    mode_Hayes = 0;
+  }
+
+  if (mode_Hayes)
+  {
+    HayesEmulationMode();
+  }
+  else
+  {
+    ShowMenu();
+  }
 }
 
 void ShowMenu()
@@ -122,11 +131,10 @@ void ShowMenu()
       break;
 
     case '5':
-   //   mode_Hayes = true;
-    //  updateEEPROMByte(ADDR_HAYES_MENU, mode_Hayes);
-      softSerial.println(F("Restarting in Hayes Emulation mode."));
-      softSerial.println(F("Use AT&M to return to menu mode."));
-      softSerial.println("NOT IMPLEMENTED - rebooting!");  // !!!!
+      mode_Hayes = true;
+      updateEEPROMByte(ADDR_HAYES_MENU, mode_Hayes);
+      softSerial.println(F("Hayes mode set.  Use AT&M to return to menu mode."));
+      softSerial.println(""); 
       ESP.restart();
       while (1);
       break;
@@ -228,9 +236,6 @@ void ShowInfo(boolean powerup)
   softSerial.print(F("Firmware:    "));
   softSerial.println(VERSION);
 
-  yield();  // For 300 baud
-
-  //C64Print(F("Listen port: "));    C64Serial.print(WiFlyLocalPort); C64Serial.println();
   yield();  // For 300 baud
 }
 

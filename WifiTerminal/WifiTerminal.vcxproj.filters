@@ -22,6 +22,7 @@
     <None Include="EEPROM.ino" />
     <None Include="UserInput.ino" />
     <None Include="Incoming.ino" />
+    <None Include="Hayes.ino" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="__vm\.WifiTerminal.vsarduino.h">
