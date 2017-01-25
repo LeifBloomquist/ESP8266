@@ -78,10 +78,12 @@
       <FileType>CppCode</FileType>
     </None>
     <None Include="EEPROM.ino" />
+    <None Include="Incoming.ino" />
     <None Include="PhoneBook.ino" />
     <None Include="Telnet.ino">
       <FileType>CppCode</FileType>
     </None>
+    <None Include="UserInput.ino" />
     <None Include="WifiTerminal.ino">
       <FileType>CppCode</FileType>
     </None>

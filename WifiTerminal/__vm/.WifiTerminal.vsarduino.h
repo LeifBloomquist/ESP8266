@@ -107,6 +107,8 @@ typedef long __PTRDIFF_TYPE__;
 #include "WifiTerminal.ino"
 #include "Ansi.ino"
 #include "EEPROM.ino"
+#include "Incoming.ino"
 #include "PhoneBook.ino"
 #include "Telnet.ino"
+#include "UserInput.ino"
 #endif

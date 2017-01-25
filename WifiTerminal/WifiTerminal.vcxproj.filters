@@ -20,6 +20,8 @@
     <None Include="Telnet.ino" />
     <None Include="PhoneBook.ino" />
     <None Include="EEPROM.ino" />
+    <None Include="UserInput.ino" />
+    <None Include="Incoming.ino" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="__vm\.WifiTerminal.vsarduino.h">

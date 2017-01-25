@@ -99,6 +99,10 @@ void PhoneBook()
 
 void DisplayPhoneBook() 
 {
+  softSerial.println();
+  softSerial.println(F("Phone Book"));
+  softSerial.println();
+
   for (int i = 0; i < ADDR_HOST_ENTRIES; i++)
   {
     softSerial.print(i + 1);
@@ -129,7 +133,7 @@ void removeSpaces(char *temp)
 void Dialout(char* host)
 {
   char* index;
-  uint16_t port = 23;
+  uint16_t port = TELNET_DEFAULT_PORT;
   String hostname = String(host);
 
   if (strlen(host) == 0)

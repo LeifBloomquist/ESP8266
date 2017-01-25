@@ -1,4 +1,7 @@
 // Telnet Stuff
+
+#define TELNET_DEFAULT_PORT 23
+
 #define NVT_SE 240
 #define NVT_NOP 241
 #define NVT_DATAMARK 242

@@ -43,7 +43,7 @@ SoftwareSerial softSerial(4, 5); // RX, TX
 unsigned int BAUD_RATE = 9600;
 
 String lastHost = "";
-int lastPort = 23;
+int lastPort = TELNET_DEFAULT_PORT;
 
 void setup() 
 {  
@@ -76,12 +76,7 @@ void setup()
   }
 
   softSerial.println("WiFi connected!");
-
   ShowInfo(true);
- 
-  // Start the server 
-  //server.begin();
-  //server.setNoDelay(true);   
 }
 
 
@@ -96,7 +91,8 @@ void loop()
 void ShowMenu()
 {
   softSerial.print
-  (F("1. Telnet to Host\r\n"
+  (F("\r\n"
+     "1. Telnet to Host\r\n"
      "2. Phone Book\r\n"
      "3. Wait for Incoming Connection\r\n"
      "4. Configuration\r\n"
@@ -304,157 +300,5 @@ void TerminalMode(WiFiClient client)
     }
   } // while (client.connected())
 }
-
-// ----------------------------------------------------------
-// Simple Incoming connection handling
-
-int WiFiLocalPort = 0;
-
-void Incoming()
-{
-  int localport = WiFiLocalPort;
-
-  softSerial.print(F("\r\nIncoming port ("));
-  softSerial.print(localport);
-  softSerial.print(F("): "));
-
-  String strport = GetInput();
-
-  if (strport.length() > 0)
-  {
-    localport = strport.toInt();
-    //setLocalPort(localport);  !!!! Write to EEPROM?
-  }
-
-  WiFiLocalPort = localport;
-
-  WiFiServer server(localport);
-  WiFiClient serverClients[MAX_SRV_CLIENTS];
-
-  while (1)
-  {
-    // Force close any connections that were made before we started listening, as
-    // the WiFly is always listening and accepting connections if a local port
-    // is defined.
-    server.close();
-
-    softSerial.print(F("\r\nWaiting for connection on port "));
-    softSerial.println(WiFiLocalPort);
-
-    uint8_t i;
-    //check if there are any new clients
-    if (server.hasClient())
-    {
-      for (i = 0; i < MAX_SRV_CLIENTS; i++)
-      {
-        //find free/disconnected spot
-        if (!serverClients[i] || !serverClients[i].connected())
-        {
-          if (serverClients[i]) serverClients[i].stop();
-          serverClients[i] = server.available();
-
-          softSerial.println(F("Incoming Connection"));  // From....?         
-
-
-          // Handle incoming connection
-          serverClients[i].println(F("CONNECTING..."));
-          //CheckTelnet();
-          TerminalMode(serverClients[i]);
-          continue;
-        }
-      }
-
-      //no free/disconnected spot so reject
-      WiFiClient serverClient = server.available();
-      serverClient.write("\n\rSorry, server is busy\n\r\n\r");
-      serverClient.stop();
-    }
-    else
-    {
-      if (softSerial.available() > 0)  // Key hit
-      {
-        softSerial.read();  // Eat Character
-        softSerial.println(F("Cancelled"));
-        server.close();
-        return;
-      }
-    }
-  }
-}
-
-// ----------------------------------------------------------
-// User Input Handling
-
-boolean IsBackSpace(char c)
-{
-  if ((c == 8) || (c == 20) || (c == 127))
-  {
-    return true;
-  }
-  else
-  {
-    return false;
-  }
-}
-
-String GetInput()
-{
-  String temp = GetInput_Raw();
-  temp.trim();
-  return temp;
-}
-
-String GetInput_Raw()
-{
-  char temp[80];
-
-  int max_length = sizeof(temp);
-
-  int i = 0; // Input buffer pointer
-  char key;
-
-  while (true)
-  {
-    key = ReadByte(softSerial);  // Read in one character
-
-    if (!IsBackSpace(key))  // Handle character, if not backspace
-    {
-      temp[i] = key;
-      softSerial.write(key);    // Echo key press back to the user
-
-      if (((int)key == 13) || (i >= (max_length - 1)))   // The 13 represents enter key.
-      {
-        temp[i] = 0; // Terminate the string with 0.
-        return String(temp);
-      }
-      i++;
-    }
-    else     // Backspace
-    {
-      if (i > 0)
-      {
-        softSerial.write(key);
-        i--;
-      }
-    }
-
-    // Make sure didn't go negative
-    if (i < 0) i = 0;
-  }
-}
-
-
-// ----------------------------------------------------------
-// Helper functions for read/peek
-
-int ReadByte(Stream& in)
-{
-  while (in.available() == 0) 
-  {
-    yield();
-  }
-  return in.read();
-}
-
 
 // EOF
