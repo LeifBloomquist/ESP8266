@@ -4,9 +4,6 @@
 void Incoming()
 {
     uint16 WiFiLocalPort = readEEPROMInteger(ADDR_PORT_LO);
-    WiFiServer wifi_server(WiFiLocalPort);
-
-    WiFiClient FirstClient;
 
     softSerial.print(F("\r\nIncoming port ("));
     softSerial.print(WiFiLocalPort);
@@ -21,6 +18,7 @@ void Incoming()
     }
 
     // Start the server 
+    WiFiServer wifi_server(WiFiLocalPort);    
     wifi_server.begin();
     wifi_server.setNoDelay(true);
 
@@ -40,7 +38,7 @@ void Incoming()
         if (wifi_server.hasClient())
         {
             // This code has to be here for disconnections via +++ to work.  If moved a separate function, .stop() doesn't work.  Scope issue?
-            FirstClient = wifi_server.available();
+            WiFiClient FirstClient = wifi_server.available();
             softSerial.print(F("Incoming connection from "));
             softSerial.println(FirstClient.remoteIP());
             FirstClient.println(F("CONNECTING..."));
@@ -60,6 +58,7 @@ void Incoming()
             softSerial.read();  // Eat Character
             softSerial.println(F("Cancelled"));
             wifi_server.close();
+            wifi_server.stop();
             return;
         }
     }
