@@ -1,81 +1,69 @@
 // ----------------------------------------------------------
 // Simple Incoming connection handling
 
-//how many clients should be able to telnet to this ESP8266
-#define MAX_SRV_CLIENTS 1
-
-int WiFiLocalPort = TELNET_DEFAULT_PORT;
-
 void Incoming()
 {
-  softSerial.print(F("\r\nIncoming port ("));
-  softSerial.print(WiFiLocalPort);
-  softSerial.print(F("): "));
+    WiFiClient FirstClient;
 
-  String strport = GetInput();
+    softSerial.print(F("\r\nIncoming port ("));
+    softSerial.print(WiFiLocalPort);
+    softSerial.print(F("): "));
 
-  if (strport.length() > 0)
-  {
-    WiFiLocalPort = strport.toInt();
-    //setLocalPort(localport);  !!!! Write to EEPROM?
-  }
+    String strport = GetInput();
 
-  WiFiServer server(WiFiLocalPort);
-  WiFiClient serverClients[MAX_SRV_CLIENTS];
-
-  // Start the server 
-  server.begin();
-  server.setNoDelay(true);
-
-  softSerial.print(F("\r\nWaiting for connection on "));
-  softSerial.print(WiFi.localIP());
-  softSerial.print(" port ");
-  softSerial.println(WiFiLocalPort);
-
-  while (1)
-  {
-    yield();
-
-    uint8_t i;
-    //check if there are any new clients
-    if (server.hasClient())
+    if (strport.length() > 0)
     {
-      for (i = 0; i < MAX_SRV_CLIENTS; i++)
-      {
-        //find free/disconnected spot
-        if (!serverClients[i] || !serverClients[i].connected())
+        WiFiLocalPort = strport.toInt();
+        //setLocalPort(localport);  !!!! Write to EEPROM?
+    }
+
+    // Start the server 
+    wifi_server.begin();
+    wifi_server.setNoDelay(true);
+
+    softSerial.print(F("\r\nWaiting for connection on "));
+    softSerial.print(WiFi.localIP());
+    softSerial.print(" port ");
+    softSerial.println(WiFiLocalPort);
+
+    while (true)
+    {
+        // 0. Let the ESP8266 do its stuff in the background
+        yield();
+     
+        // 1. Check for new connections
+        if (wifi_server.hasClient())
         {
-          if (serverClients[i]) serverClients[i].stop();
-          serverClients[i] = server.available();
-
-          softSerial.print(F("Incoming connection from "));
-          softSerial.println(serverClients[i].remoteIP());
-
-          // Handle incoming connection
-          serverClients[i].println(F("CONNECTING..."));
-          //CheckTelnet();
-          TerminalMode(serverClients[i]);
-          softSerial.println(F("Incoming connection closed."));
-          continue;
+            FirstClient = wifi_server.available();
+            ConnectIncoming(FirstClient);
         }
-      }
 
-      softSerial.println(F("DEBUG: Incoming connection but already connected ****"));
+        // 2. Check for cancel
+        if (softSerial.available() > 0)  // Key hit
+        {
+            softSerial.read();  // Eat Character
+            softSerial.println(F("Cancelled"));
+            wifi_server.close();
+            return;
+        }
+    }
+}
 
-      //no free/disconnected spot so reject
-      WiFiClient serverClient = server.available();
-      serverClient.write("\n\rSorry, server is busy\n\r\n\r");
-      serverClient.stop();
-    }
-    else
-    {
-      if (softSerial.available() > 0)  // Key hit
-      {
-        softSerial.read();  // Eat Character
-        softSerial.println(F("Cancelled"));
-        server.close();
-        return;
-      }
-    }
-  }
+// Handle first incoming connection
+bool ConnectIncoming(WiFiClient client)
+{
+    softSerial.print(F("Incoming connection from "));
+    softSerial.println(client.remoteIP());
+    client.println(F("CONNECTING..."));
+    //CheckTelnet();
+    TerminalMode(client);
+    softSerial.println(F("Incoming connection closed."));
+}
+
+// Reject additional incoming connections
+bool RejectIncoming(WiFiClient client)
+{
+    //no free/disconnected spot so reject
+    client.write("\n\rSorry, server is busy\n\r\n\r");
+    client.stop();
 }

@@ -41,6 +41,9 @@ int lastPort = TELNET_DEFAULT_PORT;
 
 int mode_Hayes = 1;    // 0 = Menu, 1 = Hayes
 
+int WiFiLocalPort = TELNET_DEFAULT_PORT;
+WiFiServer wifi_server(WiFiLocalPort);
+
 void setup() 
 {  
   // Serial connections
@@ -252,10 +255,14 @@ void TerminalMode(WiFiClient client)
 
   while (client.connected())
   {
+     // 0. Let ESP8266 do its thing
+	yield();
+
+    // 1. Reset LEDs
     digitalWrite(BLUE_LED, HIGH);  // HIGH=Off
     digitalWrite(RED_LED, HIGH);
 
-    // Get data from the telnet client and push it to the UART client
+    // 2. Get data from the telnet client and push it to the serial port
     if (client.available() > 0)
     {
       digitalWrite(BLUE_LED, LOW);  // Low=On
@@ -292,7 +299,7 @@ void TerminalMode(WiFiClient client)
       }
     }
 
-    //check UART for data
+    // 3. Check serial port for data and push it to the telnet client
     if (softSerial.available())
     {
       digitalWrite(RED_LED, LOW);  // Low=On
@@ -302,6 +309,13 @@ void TerminalMode(WiFiClient client)
       softSerial.readBytes(sbuf, len);
       client.write(sbuf, len);
       delay(1);  // needed?
+    }
+
+    // 4. Check for new incoming connections - reject
+    if (wifi_server.hasClient())
+    {
+        WiFiClient newClient = wifi_server.available();
+        RejectIncoming(newClient);
     }
   } // while (client.connected())
 }
