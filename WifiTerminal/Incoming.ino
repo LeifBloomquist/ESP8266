@@ -35,7 +35,17 @@ void Incoming()
         if (wifi_server.hasClient())
         {
             FirstClient = wifi_server.available();
-            ConnectIncoming(FirstClient);
+
+            softSerial.print(F("Incoming connection from "));
+            softSerial.println(FirstClient.remoteIP());
+            FirstClient.println(F("CONNECTING..."));
+            //CheckTelnet(client);
+
+            TerminalMode(FirstClient);
+            FirstClient.stop();
+            yield();
+
+            softSerial.println(F("Incoming connection closed."));          
         }
 
         // 2. Check for cancel
@@ -52,12 +62,7 @@ void Incoming()
 // Handle first incoming connection
 bool ConnectIncoming(WiFiClient client)
 {
-    softSerial.print(F("Incoming connection from "));
-    softSerial.println(client.remoteIP());
-    client.println(F("CONNECTING..."));
-    //CheckTelnet();
-    TerminalMode(client);
-    softSerial.println(F("Incoming connection closed."));
+    
 }
 
 // Reject additional incoming connections

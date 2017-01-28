@@ -1194,3 +1194,60 @@ void Modem_Loop()
   // Terminal to Modem flow
   Modem_ProcessData();
 }
+
+// Check for the <pause>+++ sequence.  It's handled differently between Menu and Hayes, so this merely returns true/false.
+bool CheckEscape(char InputCharacter)
+{
+    // Debug
+    Modem_S2_EscapeCharacter = '+';
+
+    if (Modem_S2_EscapeCharacter < 128) // 128-255 disables escape sequence
+    {
+        if ((millis() - ESCAPE_GUARD_TIME) > Modem_EscapeTimer)                                                           // 1. Guard Time has elapsed
+        {
+            if ((InputCharacter == Modem_S2_EscapeCharacter) && (Modem_lastInputCharacter != Modem_S2_EscapeCharacter))   // 2. Start of sequence
+            {
+                Modem_EscapeCount = 1;
+                Modem_lastInputCharacter = InputCharacter;
+                return false;
+            }
+            else if (InputCharacter == Modem_S2_EscapeCharacter && Modem_lastInputCharacter == Modem_S2_EscapeCharacter)  // 3. Sequence continues
+            {
+                Modem_lastInputCharacter = InputCharacter;
+                Modem_EscapeCount++;                                
+
+                if (Modem_EscapeCount == 3)                                                                               // 3a. Sequence complete if three!
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            else                                                                                                           // 4. Reset sequence on other character
+            {
+                Modem_EscapeCount = 0;
+                Modem_EscapeTimer = millis();   // Last time non + data was read
+                return false;
+            }
+        }
+        else
+        {
+            Modem_EscapeTimer = millis();   // Last time data was read
+            return false;
+        }
+
+       
+            /*
+            Modem_EscapeReceived = true;
+            Modem_EscapeCount = 0;
+            Modem_EscapeTimer = 0;
+            Modem_isCommandMode = true;
+            softSerial.println();
+            Modem_PrintOK();
+            */
+    }
+
+    return false;
+}

@@ -138,8 +138,10 @@ void Dialout(char* host)
 
   if (strlen(host) == 0)
   {
-//    if (mode_Hayes)
-//      Modem_PrintERROR();
+    if (mode_Hayes)
+    {
+      Modem_PrintERROR();
+    }
     return;
   }
 

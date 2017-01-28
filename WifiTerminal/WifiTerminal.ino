@@ -53,8 +53,7 @@ void setup()
   // LEDs
   pinMode(BLUE_LED, OUTPUT);
   pinMode(RED_LED, OUTPUT);
-  digitalWrite(BLUE_LED, HIGH);  // HIGH=Off
-  digitalWrite(RED_LED, HIGH);
+  ClearLEDs();
 
   // EEPROM
   EEPROM.begin(1024);
@@ -81,41 +80,42 @@ void setup()
 
 void loop()
 {
-  digitalWrite(BLUE_LED, HIGH);  // HIGH=Off
-  digitalWrite(RED_LED, HIGH);
+    ClearLEDs();
 
-  // Menu or Hayes AT command mode?
-  mode_Hayes = EEPROM.read(ADDR_HAYES_MENU);
+      // Menu or Hayes AT command mode?
+      mode_Hayes = EEPROM.read(ADDR_HAYES_MENU);
 
-  if (mode_Hayes < 0 || mode_Hayes > 1)
-  {
-    mode_Hayes = 0;
-  }
+      if (mode_Hayes < 0 || mode_Hayes > 1)
+      {
+        mode_Hayes = 0;
+      }
 
-  // DEBUG !!!! Always start in Menu mode for testing.
-  mode_Hayes = 0;
+      // DEBUG !!!! Always start in Menu mode for testing.
+      mode_Hayes = 0;
 
-  if (mode_Hayes)
-  {
-    HayesEmulationMode();
-  }
-  else
-  {
-    ShowMenu();
-  }
+      if (mode_Hayes)
+      {
+        HayesEmulationMode();
+      }
+      else
+      {
+        ShowMenu();
+      }
 }
 
 void ShowMenu()
 {
-  softSerial.print
-  (F("\r\n"
-     "1. Telnet to Host\r\n"
-     "2. Phone Book\r\n"
-     "3. Wait for Incoming Connection\r\n"
-     "4. Configuration\r\n"
-     "5. Hayes Emulation Mode \r\n"
-     "\r\n"
-     "Select: "));
+    ClearLEDs();
+
+    softSerial.print
+      (F("\r\n"
+         "1. Telnet to Host\r\n"
+         "2. Phone Book\r\n"
+         "3. Wait for Incoming Connection\r\n"
+         "4. Configuration\r\n"
+         "5. Hayes Emulation Mode \r\n"
+         "\r\n"
+         "Select: "));
 
   int option = ReadByte(softSerial);
   softSerial.println((char)option);   // Echo back
@@ -242,6 +242,12 @@ void ShowInfo(boolean powerup)
   yield();  // For 300 baud
 }
 
+void ClearLEDs()
+{
+    digitalWrite(BLUE_LED, HIGH);  // HIGH=Off
+    digitalWrite(RED_LED, HIGH);
+}
+
 
 void TerminalMode(WiFiClient client)
 {
@@ -259,15 +265,14 @@ void TerminalMode(WiFiClient client)
 	yield();
 
     // 1. Reset LEDs
-    digitalWrite(BLUE_LED, HIGH);  // HIGH=Off
-    digitalWrite(RED_LED, HIGH);
+    ClearLEDs();
 
     // 2. Get data from the telnet client and push it to the serial port
     if (client.available() > 0)
     {
       digitalWrite(BLUE_LED, LOW);  // Low=On
 
-      int data = client.read();
+      char data = client.read();
 
       // If first character back from remote side is NVT_IAC, we have a telnet connection.
       if (isFirstChar)
@@ -304,11 +309,18 @@ void TerminalMode(WiFiClient client)
     {
       digitalWrite(RED_LED, LOW);  // Low=On
 
-      size_t len = softSerial.available();
-      uint8_t sbuf[len];
-      softSerial.readBytes(sbuf, len);
-      client.write(sbuf, len);
-      delay(1);  // needed?
+      char data = softSerial.read();
+      client.write((char)data);  // Weird!
+      delay(1);
+
+      // 3a. Check Escape (+++).  Just exit immediately if found.
+      if (CheckEscape(data))
+      {
+          AnsiReverse(softSerial);
+          softSerial.println("Escape!");
+          AnsiNormal(softSerial);
+          return;
+      }   
     }
 
     // 4. Check for new incoming connections - reject
