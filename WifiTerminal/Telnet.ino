@@ -73,7 +73,9 @@ void Connect(String host, int port)
     return;
   }
 
-  TerminalMode(client);
+  WiFiServer dummy(0);
+
+  TerminalMode(client, dummy);
 }
 
 

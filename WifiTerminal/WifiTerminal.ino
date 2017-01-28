@@ -41,9 +41,6 @@ int lastPort = TELNET_DEFAULT_PORT;
 
 int mode_Hayes = 1;    // 0 = Menu, 1 = Hayes
 
-int WiFiLocalPort = TELNET_DEFAULT_PORT;
-WiFiServer wifi_server(WiFiLocalPort);
-
 void setup() 
 {  
   // Serial connections
@@ -82,25 +79,25 @@ void loop()
 {
     ClearLEDs();
 
-      // Menu or Hayes AT command mode?
-      mode_Hayes = EEPROM.read(ADDR_HAYES_MENU);
+    // Menu or Hayes AT command mode?
+    mode_Hayes = EEPROM.read(ADDR_HAYES_MENU);
 
-      if (mode_Hayes < 0 || mode_Hayes > 1)
-      {
+    if (mode_Hayes < 0 || mode_Hayes > 1)
+    {
         mode_Hayes = 0;
-      }
+    }
 
-      // DEBUG !!!! Always start in Menu mode for testing.
-      mode_Hayes = 0;
+    // DEBUG !!!! Always start in Menu mode for testing.
+    mode_Hayes = 0;
 
-      if (mode_Hayes)
-      {
+    if (mode_Hayes)
+    {
         HayesEmulationMode();
-      }
-      else
-      {
+    }
+    else
+    {
         ShowMenu();
-      }
+    }
 }
 
 void ShowMenu()
@@ -249,7 +246,7 @@ void ClearLEDs()
 }
 
 
-void TerminalMode(WiFiClient client)
+void TerminalMode(WiFiClient client, WiFiServer &server)
 {
   int i = 0;
   char buffer[10];
@@ -261,74 +258,75 @@ void TerminalMode(WiFiClient client)
 
   while (client.connected())
   {
-     // 0. Let ESP8266 do its thing
-	yield();
+      // 0. Let ESP8266 do its stuff in the background
+      yield();
 
-    // 1. Reset LEDs
-    ClearLEDs();
+      // 1. Reset LEDs
+      ClearLEDs();
 
-    // 2. Get data from the telnet client and push it to the serial port
-    if (client.available() > 0)
-    {
-      digitalWrite(BLUE_LED, LOW);  // Low=On
-
-      char data = client.read();
-
-      // If first character back from remote side is NVT_IAC, we have a telnet connection.
-      if (isFirstChar)
+      // 2. Get data from the telnet client and push it to the serial port
+      if (client.available() > 0)
       {
-        if (data == NVT_IAC)
-        {
-          isTelnet = true;
-          CheckTelnet(isFirstChar, telnetBinaryMode, client);
-        }
-        else
-        {
-          isTelnet = false;
-        }
-        isFirstChar = false;
-      }
-      else  // Connection already established, but may be more telnet control characters
-      {
-        if ((data == NVT_IAC) && isTelnet)
-        {
-          if (CheckTelnet(isFirstChar, telnetBinaryMode, client))
+          digitalWrite(BLUE_LED, LOW);  // Low=On
+
+          char data = client.read();
+
+          // If first character back from remote side is NVT_IAC, we have a telnet connection.
+          if (isFirstChar)
           {
-            softSerial.write(NVT_IAC);
+              if (data == NVT_IAC)
+              {
+                  isTelnet = true;
+                  CheckTelnet(isFirstChar, telnetBinaryMode, client);
+              }
+              else
+              {
+                  isTelnet = false;
+              }
+              isFirstChar = false;
           }
-        }
-        else   //  Finally regular data - just pass the data along.
-        {
-          softSerial.write(data);
-        }
+          else  // Connection already established, but may be more telnet control characters
+          {
+              if ((data == NVT_IAC) && isTelnet)
+              {
+                  if (CheckTelnet(isFirstChar, telnetBinaryMode, client))
+                  {
+                      softSerial.write(NVT_IAC);
+                  }
+              }
+              else   //  Finally regular data - just pass the data along.
+              {
+                  softSerial.write(data);
+              }
+          }
       }
-    }
 
-    // 3. Check serial port for data and push it to the telnet client
-    if (softSerial.available())
-    {
-      digitalWrite(RED_LED, LOW);  // Low=On
-
-      char data = softSerial.read();
-      client.write((char)data);  // Weird!
-      delay(1);
-
-      // 3a. Check Escape (+++).  Just exit immediately if found.
-      if (CheckEscape(data))
+      // 3. Check serial port for data and push it to the telnet client
+      if (softSerial.available())
       {
-          AnsiReverse(softSerial);
-          softSerial.println("Escape!");
-          AnsiNormal(softSerial);
-          return;
-      }   
-    }
+          digitalWrite(RED_LED, LOW);  // Low=On
 
-    // 4. Check for new incoming connections - reject
-    if (wifi_server.hasClient())
-    {
-        WiFiClient newClient = wifi_server.available();
+          char data = softSerial.read();
+          client.write((char)data);  // Weird!
+          delay(1);
+
+          // 3a. Check Escape (+++).  Just exit immediately if found (which disconnects)
+          if (CheckEscape(data))
+          {
+              AnsiReverse(softSerial);
+              softSerial.println("Escape!");
+              AnsiNormal(softSerial);
+              return;
+          }
+      }
+
+     // 4. Check for new incoming connections - reject
+     if (server.hasClient())
+     {
+        WiFiClient newClient = server.available();
         RejectIncoming(newClient);
     }
+
   } // while (client.connected())
 }
 

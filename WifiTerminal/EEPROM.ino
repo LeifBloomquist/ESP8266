@@ -7,6 +7,22 @@ void updateEEPROMByte(int address, byte value)
   }
 }
 
+void updateEEPROMInteger(int address, uint16 value)
+{
+    byte hi = value / 256;
+    byte lo = value % 256;        
+
+    updateEEPROMByte(address+0, lo);
+    updateEEPROMByte(address+1, hi);
+}
+
+uint16 readEEPROMInteger(int address)
+{
+    return (EEPROM.read(address + 0) +
+            EEPROM.read(address + 1) * 256);
+}
+
+
 void updateEEPROMPhoneBook(int address, String host)
 {
   int i = 0;

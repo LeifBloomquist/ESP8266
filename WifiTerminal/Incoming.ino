@@ -3,6 +3,9 @@
 
 void Incoming()
 {
+    uint16 WiFiLocalPort = readEEPROMInteger(ADDR_PORT_LO);
+    WiFiServer wifi_server(WiFiLocalPort);
+
     WiFiClient FirstClient;
 
     softSerial.print(F("\r\nIncoming port ("));
@@ -13,8 +16,8 @@ void Incoming()
 
     if (strport.length() > 0)
     {
-        WiFiLocalPort = strport.toInt();
-        //setLocalPort(localport);  !!!! Write to EEPROM?
+        WiFiLocalPort = strport.toInt();       
+        updateEEPROMInteger(ADDR_PORT_LO, WiFiLocalPort);
     }
 
     // Start the server 
@@ -28,20 +31,23 @@ void Incoming()
 
     while (true)
     {
+        ClearLEDs();
+
         // 0. Let the ESP8266 do its stuff in the background
         yield();
      
         // 1. Check for new connections
         if (wifi_server.hasClient())
         {
+            // This code has to be here for disconnections via +++ to work.  If moved a separate function, .stop() doesn't work.  Scope issue?
             FirstClient = wifi_server.available();
-
             softSerial.print(F("Incoming connection from "));
             softSerial.println(FirstClient.remoteIP());
             FirstClient.println(F("CONNECTING..."));
-            //CheckTelnet(client);
 
-            TerminalMode(FirstClient);
+            //CheckTelnet(client);
+            TerminalMode(FirstClient, wifi_server);
+
             FirstClient.stop();
             yield();
 
@@ -59,11 +65,6 @@ void Incoming()
     }
 }
 
-// Handle first incoming connection
-bool ConnectIncoming(WiFiClient client)
-{
-    
-}
 
 // Reject additional incoming connections
 bool RejectIncoming(WiFiClient client)
