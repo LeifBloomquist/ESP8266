@@ -15,7 +15,7 @@
 
 #include <ESP8266WiFi.h>
 #include <Adafruit_NeoPixel.h>
-
+#include "C:\Leif\GitHub\ESP8266\Common\ssids.h"
 
 const char* host = "api.thingspeak.com";
 
@@ -25,8 +25,10 @@ bool firstUpdate = false;
 long lastAnimationTime = 0;
 const long animWaitTime = 30000; // if it's been 30 seconds since something happened, do something!
 
-#define NUM_LEDS 8
-#define DATA_PIN 12 // LED strip on pin 12
+#define NUM_LEDS     60
+#define PIN_DATA     4 // LED strip on pin 12
+#define PIN_RED_LED  0
+#define PIN_BLUE_LED 2
 
 //most recent Cheerlight color in r, g, b
 uint8_t currentR;
@@ -39,14 +41,14 @@ uint8_t ghistory[NUM_LEDS];
 uint8_t bhistory[NUM_LEDS];
 
 // Define the array of leds
-Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUM_LEDS, DATA_PIN, NEO_GRB + NEO_KHZ400);   // (LB) had to swap from RGB!
+Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUM_LEDS, PIN_DATA, NEO_GRB + NEO_KHZ400);   // (LB) had to swap from RGB!
 
 void setup() {
 
-   pinMode(0, OUTPUT);
-   pinMode(2, OUTPUT);
-   digitalWrite(0, HIGH);
-   digitalWrite(2, HIGH);
+   pinMode(PIN_RED_LED, OUTPUT);
+   pinMode(PIN_BLUE_LED, OUTPUT);
+   digitalWrite(PIN_RED_LED, HIGH);
+   digitalWrite(PIN_BLUE_LED, HIGH);
    
   Serial.begin(115200);
   delay(100);
@@ -87,29 +89,30 @@ void loop() {
   //Check Cheerlights API every 3 seconds
   if ((unsigned long)(millis() - lastUpdateTime) > updateWaitTime  || firstUpdate == false) 
   {
-    digitalWrite(0, LOW);
-    getCurrentColor();
-    digitalWrite(0, HIGH);
+      digitalWrite(PIN_RED_LED, LOW);
+      getCurrentColor();
+      digitalWrite(PIN_RED_LED, HIGH);
     
-    if (isNewColor(currentR,currentG,currentB)) 
-    {
-      digitalWrite(2, LOW);
-      updateRGBArrays(currentR,currentG,currentB);
-      Serial.println("New color: " + (String)currentR + "," + (String)currentG + "," + (String)currentB);
-      lastAnimationTime == millis();
-      fillUpLEDs(currentR,currentG,currentB);
-      digitalWrite(2, HIGH);
-    }
-    if (firstUpdate == false) {
-      firstUpdate = true;
-    }
-  }
+      if (isNewColor(currentR,currentG,currentB)) 
+      {
+          digitalWrite(PIN_BLUE_LED, LOW);
+          updateRGBArrays(currentR,currentG,currentB);
+          Serial.println("New color: " + (String)currentR + "," + (String)currentG + "," + (String)currentB);
+          lastAnimationTime == millis();
+          fillUpLEDs(currentR,currentG,currentB);
+          digitalWrite(PIN_BLUE_LED, HIGH);
+      }
+      if (firstUpdate == false) 
+      {
+          firstUpdate = true;
+      }
+   }
 
   //Let's keep it interesting if the color doesn't change very often.
   //Animations every 30 seconds.
   if ((unsigned long)(millis() - lastAnimationTime) > animWaitTime) {
     //pick one animation randomly - feel free to add more of your own 
-    int animSelect = random(2);
+    int animSelect = random(3);
     switch (animSelect) {
         case 0:
           dance(currentR,currentG,currentB);
@@ -117,15 +120,16 @@ void loop() {
         case 1:
           twinkle(currentR,currentG,currentB);
           break;
+        case 2:
+          SetAllLEDs(currentR, currentG, currentB);
+          break;
         default: 
           // if nothing else matches, do the default
           // default is optional
         break;
     }
-    lastAnimationTime = millis(); 
-    SetAllLEDs(currentR,currentG,currentB);
+    lastAnimationTime = millis();   
   }
-
 }
 
 //Query the Cheerlights API for the current color
@@ -179,11 +183,14 @@ void fillUpLEDs(uint8_t r, uint8_t g, uint8_t b) {
 }
 
 //Set all LEDs to a given set of r,g,b values
-void SetAllLEDs(uint8_t r, uint8_t g, uint8_t b) {
-  for(uint16_t i=0; i<strip.numPixels(); i++){
+void SetAllLEDs(uint8_t r, uint8_t g, uint8_t b)
+{
+  for(uint16_t i=0; i<strip.numPixels(); i++)
+  {
     strip.setPixelColor(i, r,g,b);
-    strip.show();
   }
+  strip.show();
+  yield();
 }
 
 //Set every other LED to the current color and the rest blank, and alternate
@@ -211,8 +218,9 @@ void twinkle(uint8_t r, uint8_t g, uint8_t b) {
     strip.setPixelColor(random(NUM_LEDS), r,g,b);
     strip.show();
     delay(75);
+    yield();
   }
-  delay(500);
+  delay(1000);
 }
 
 bool isNewColor(int r, int g, int b) {
@@ -228,6 +236,7 @@ void updateRGBArrays(int r, int g, int b) {
     rhistory[i] = rhistory[i-1];
     ghistory[i] = ghistory[i-1];
     bhistory[i] = bhistory[i-1];
+    yield();
   }
   rhistory[0] = r;
   ghistory[0] = g;
